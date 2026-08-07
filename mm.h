@@ -67,7 +67,7 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name);
     allocated_meta_block->next_block = free_meta_block;\
 }
 
-void function(block_meta_data_t* first_meta_block){
+void function(block_meta_data_t* first_meta_block){//delete later
     int num_of_free_blocks = 0;
     int num_of_allocated_blocks = 0;
     
