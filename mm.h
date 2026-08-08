@@ -12,12 +12,14 @@ typedef enum{
 typedef struct vm_page_family_{
     char struct_name [MM_MAX_STRUCT_NAME];
     uint32_t struct_size;
+    struct vm_page_t* first_page;
 } vm_page_family_t;
 
 typedef struct vm_page_for_families_{
     struct vm_page_for_families_ *next;
     vm_page_family_t vm_page_family[0];
 }vm_page_for_families_t;
+
 
 typedef struct block_meta_data_{
     vm_bool_t is_free;
@@ -26,6 +28,14 @@ typedef struct block_meta_data_{
     struct block_meta_data_*prev_block;
     struct block_meta_data_*next_block;
 }block_meta_data_t;
+
+typedef struct vm_page_{
+    struct vm_page_* next;
+    struct vm_page_* prev;
+    vm_page_family_t* page_family;
+    block_meta_data_t block_meta_data;
+    char page_memory[0];
+}vm_page_t;
 
 vm_page_family_t* lookup_page_family_by_name(char *struct_name);
 
@@ -67,35 +77,33 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name);
     allocated_meta_block->next_block = free_meta_block;\
 }
 
-void function(block_meta_data_t* first_meta_block){//delete later
-    int num_of_free_blocks = 0;
-    int num_of_allocated_blocks = 0;
-    
-    block_meta_data_t* free_block =NULL;
-    block_meta_data_t* allocated_block = NULL;
-    
-    for(block_meta_data_t* block = first_meta_block; block!= NULL; block = block->next_block ){
-        if(block->is_free == MM_TRUE){
-            num_of_free_blocks++;
-            if(free_block != NULL || block->block_size > free_block->block_size){
-                free_block = block;
-            }
-        }
-        else{// if block is allocated
-            num_of_allocated_blocks++;
-            if(allocated_block != NULL|| block->block_size > allocated_block->block_size){
-                allocated_block = block;
-            }
-        }
-        if(block->next_block != NULL && block->next_block->is_free == MM_TRUE){
-            assert(0);
-        }       
-    } 
-    printf("There are %d free blocks \n"
-        "and the largest one is: %d bytes\n"
-        "its addr: %p", num_of_free_blocks, free_block->block_size,free_block);
-    printf("There are %d allocated blocks\n"
-        "and the largest one is: %d bytes\n"
-        "its addr: %p", num_of_allocated_blocks,allocated_block->block_size,allocated_block);
+vm_bool_t mm_is_vm_page_empty(vm_page_t* vm_page);
+
+#define MARK_VM_PAGE_EMPTY(vm_page_t_ptr)\
+vm_page_t_ptr->next = NULL;\
+vm_page_t_ptr->prev = NULL;\
+vm_page_t_ptr->block_meta_data.is_free = MM_TRUE
+
+vm_page_t* curr = NULL;
+#define ITERATE_VM_PAGE_BEGIN(vm_page_family_ptr, curr)\
+{\
+    for(curr = (vm_page_family_ptr)->first_page; curr != NULL; curr = curr->next){
+
+#define ITERATE_VM_PAGE_END(vm_page_family_ptr, curr)\
+    }\
 }
+
+#define ITERATE_VM_PAGE_ALL_BLOCKS_BEGIN(vm_page_ptr, curr)\
+{\
+    for(curr =(vm_page_ptr)->.block_meta_data; curr != NULL; curr = curr->next_block){        
+        
+#define ITERATE_VM_PAGE_ALL_BLOCKS_END(vm_page_ptr, curr)\
+    }\
+}
+
+vm_page_t* allocate_vm_page(vm_page_family_t* vm_page_family);
+    
+void mm_vm_page_delete_and_free(vm_page_t* vm_page);
+
+
 #endif

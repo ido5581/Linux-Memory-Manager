@@ -68,7 +68,7 @@ void mm_instantiate_new_page_family(char* struct_name, uint32_t struct_size){
     strncpy(vm_page_family_curr->struct_name, struct_name,
         MM_MAX_STRUCT_NAME);
         vm_page_family_curr->struct_size = struct_size;
-        //vm_page_family_curr->first_page = NULL;
+        vm_page_family_curr->first_page = NULL;
 }
 
 void mm_print_registered_page_families(){
@@ -101,8 +101,64 @@ static void mm_union_free_blocks(block_meta_data_t* first, block_meta_data_t* se
         second->next_block->prev_block = first;
 }
 
+vm_bool_t mm_is_vm_page_empty(vm_page_t* vm_page){
+    if(vm_page->block_meta_data.next_block == NULL &&
+    vm_page->block_meta_data.prev_block == NULL &&
+    vm_page->block_meta_data.is_free == MM_TRUE){
+        return MM_TRUE;
+    }
+    return MM_FALSE;
+}
+static inline uint32_t mm_max_page_allocateable_memory(int units){
+    return (uint32_t)((SYSTEM_PAGE_SIZE*units)-offsetof(vm_page_t, page_memory));
+}
+
+vm_page_t* allocate_vm_page(vm_page_family_t* vm_page_family){
+    vm_page_t* vm_page = mm_get_new_vm_page_from_kernal(1);
+    MARK_VM_PAGE_EMPTY(vm_page);
+    vm_page->block_meta_data.block_size = mm_max_page_allocateable_memory(1);
+    vm_page->block_meta_data.offset = offsetof(vm_page_t, block_meta_data);
+    vm_page->next = NULL;
+    vm_page->prev = NULL;
+    vm_page->page_family = vm_page_family;
+    if(vm_page_family->first_page == NULL){
+        vm_page_family->first_page = vm_page;
+        return vm_page;
+    }
+    vm_page->next = vm_page_family->first_page;
+    vm_page_family->first_page = vm_page;
+    return vm_page;
+}
+
+void mm_vm_page_delete_and_free(vm_page_t* vm_page){
+    vm_page_family_t* vm_page_family = vm_page->page_family;
+    if(vm_page_family->first_page == vm_page){
+        vm_page_family->first_page = vm_page->next;
+        if(vm_page->next != NULL){
+            vm_page->next->prev = NULL;
+        }
+        vm_page->next = NULL;
+        vm_page->prev = NULL;
+        mm_retrun_vm_to_kernal((void*)vm_page,1);
+        return;
+    }
+    // if the page isnt the first in the family
+    vm_page_t* curr_prev = vm_page->prev;
+    vm_page_t* curr_next = vm_page->next;
+    if(curr_next!= NULL){
+        curr_next->prev = curr_prev;
+    }
+    curr_prev->next = curr_next;
+
+    vm_page->next = NULL;
+    vm_page->prev = NULL;
+    mm_retrun_vm_to_kernal((void*)vm_page,1);
+}
 
 int main(){
     return 0;
 }
+
+
+
 
