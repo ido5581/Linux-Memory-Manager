@@ -13,6 +13,7 @@ typedef struct vm_page_family_{
     char struct_name [MM_MAX_STRUCT_NAME];
     uint32_t struct_size;
     struct vm_page_t* first_page;
+    //add the head of the glthread list you need to create
 } vm_page_family_t;
 
 typedef struct vm_page_for_families_{
