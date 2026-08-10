@@ -9,14 +9,14 @@ typedef struct glheap_node_{
 }glheap_node_t;
 
 typedef struct glheap_{// the "manager of the heap"
-    glheap_node_t* head;
-    unsigned int offset;
+    glheap_node_t* root;
     unsigned int size; // current size of the heap
+    unsigned int offset;
 }glheap_t;
 
-void glheap_insert(glheap_t* head, glheap_node_t* glnode);
+void glnode_insert(glheap_t* heap, glheap_node_t* glnode);
 glheap_node_t* gl_heap_extract_max(glheap_t* glheap);
-void glheap_remove(glheap_t* glheap);
+void glnode_remove(glheap_t* glheap);
 
 #define glheap_node_init(glnode) \
 {                                \
