@@ -52,8 +52,9 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name);
     curr++, count++){
 
 #define ITERATE_PAGE_FAMILIES_END(vm_page_families_ptr, curr)}}
-
+#ifndef offsetof
 #define offsetof(struct_name, field_name) ((size_t) &((struct_name *)0)->field_name)
+#endif
 
 #define MM_GET_PAGE_FROM_META_BLOCK(block_meta_data_ptr)\
 (void*)((unsigned long)(block_meta_data_ptr)&~(SYSTEM_PAGE_SIZE-1))
