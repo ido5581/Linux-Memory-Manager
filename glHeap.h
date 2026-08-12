@@ -16,7 +16,7 @@ typedef struct glheap_{// the "manager of the heap"
 
 void glnode_insert(glheap_t* heap, glheap_node_t* glnode);
 glheap_node_t* gl_heap_extract_max(glheap_t* glheap);
-void glnode_remove(glheap_t* glheap);
+void glnode_remove(glheap_t* glheap, glheap_node_t* glnode);
 
 #define glheap_node_init(glnode) \
 {                                \

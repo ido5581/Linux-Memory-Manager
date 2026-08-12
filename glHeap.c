@@ -62,7 +62,7 @@ static void shift_up(glheap_t* heap, glheap_node_t* glnode){
 static glheap_node_t* get_insertion_parent(glheap_t* heap){
     unsigned int target = heap->size+1;
     int MSB =-1;
-    for(int i = 31; i >=0; i++){
+    for(int i = 31; i >=0; i--){
         if((target >> i)&1){
             MSB = i;
             break;
@@ -105,7 +105,7 @@ void glnode_insert(glheap_t* heap, glheap_node_t* glnode){
 static glheap_node_t* get_last_node(glheap_t* heap){
     unsigned int target = heap->size;
     int MSB =-1;
-    for(int i = 31; i >=0; i++){
+    for(int i = 31; i >=0; i--){
         if((target >> i)&1){
             MSB = i;
             break;
@@ -194,8 +194,47 @@ glheap_node_t* gl_heap_extract_max(glheap_t* glheap){
     return root;
 }
 
-
-
-
-
-
+void glnode_remove(glheap_t* glheap, glheap_node_t* glnode){
+    if(!glheap || !glnode || glheap->size == 0) return;
+    glheap_node_t* bottom = get_last_node(glheap);
+    if(bottom == glnode){
+        if(bottom->parent){
+            if(bottom->parent->left == bottom)
+                bottom->parent->left = NULL;
+            else
+                bottom->parent->right = NULL;
+        }
+        else{
+            glheap->root = NULL;
+        }
+        glheap->size--;
+        return;
+    }
+    if (bottom->parent->left == bottom) {
+        bottom->parent->left = NULL;
+    } else {
+        bottom->parent->right = NULL;
+    }
+    glheap->size--;
+    bottom->parent = glnode->parent;
+    bottom->left = glnode->left;
+    bottom->right = glnode->right;
+    if (bottom->left) {
+        bottom->left->parent = bottom;
+    }
+    if (bottom->right) {
+        bottom->right->parent = bottom;
+    }
+    if (bottom->parent) {
+        if (bottom->parent->left == glnode) {
+            bottom->parent->left = bottom;
+        } else {
+            bottom->parent->right = bottom;
+        }
+    } else {glheap->root = bottom;}
+    if (bottom->parent != NULL && compare_nodes(glheap, bottom, bottom->parent) > 0) {
+        shift_up(glheap, bottom);
+    } else {
+        shift_down(glheap, bottom);
+    } 
+}

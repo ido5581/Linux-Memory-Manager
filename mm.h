@@ -1,5 +1,6 @@
-#ifndef MM_H
-#define MM_H
+#ifndef __MM_H
+#define __MM_H
+#include "glHeap.h"
 #include <stdint.h>
 #include <stdbool.h>
 #define MM_MAX_STRUCT_NAME 32
@@ -9,12 +10,6 @@ typedef enum{
     MM_TRUE,
 }vm_bool_t;
 
-typedef struct vm_page_family_{
-    char struct_name [MM_MAX_STRUCT_NAME];
-    uint32_t struct_size;
-    struct vm_page_t* first_page;
-    //add the head of the glthread list you need to create
-} vm_page_family_t;
 
 typedef struct vm_page_for_families_{
     struct vm_page_for_families_ *next;
@@ -28,7 +23,15 @@ typedef struct block_meta_data_{
     uint32_t offset;
     struct block_meta_data_*prev_block;
     struct block_meta_data_*next_block;
+    glheap_node_t node;
 }block_meta_data_t;
+
+typedef struct vm_page_family_{
+    char struct_name [MM_MAX_STRUCT_NAME];
+    uint32_t struct_size;
+    struct vm_page_t* first_page;
+    glheap_t free_block_heap;
+} vm_page_family_t;
 
 typedef struct vm_page_{
     struct vm_page_* next;
@@ -86,7 +89,7 @@ vm_page_t_ptr->next = NULL;\
 vm_page_t_ptr->prev = NULL;\
 vm_page_t_ptr->block_meta_data.is_free = MM_TRUE
 
-vm_page_t* curr = NULL;
+//vm_page_t* curr = NULL;
 #define ITERATE_VM_PAGE_BEGIN(vm_page_family_ptr, curr)\
 {\
     for(curr = (vm_page_family_ptr)->first_page; curr != NULL; curr = curr->next){
@@ -97,7 +100,7 @@ vm_page_t* curr = NULL;
 
 #define ITERATE_VM_PAGE_ALL_BLOCKS_BEGIN(vm_page_ptr, curr)\
 {\
-    for(curr =(vm_page_ptr)->.block_meta_data; curr != NULL; curr = curr->next_block){        
+    for(curr =(vm_page_ptr)->block_meta_data; curr != NULL; curr = curr->next_block){        
         
 #define ITERATE_VM_PAGE_ALL_BLOCKS_END(vm_page_ptr, curr)\
     }\
@@ -107,5 +110,17 @@ vm_page_t* allocate_vm_page(vm_page_family_t* vm_page_family);
     
 void mm_vm_page_delete_and_free(vm_page_t* vm_page);
 
+void mm_add_free_block_to_heap(vm_page_family_t *family, block_meta_data_t *free_block);
+
+
+//PEEK
+static inline block_meta_data_t* mm_get_biggest_block_page_family(vm_page_family_t *vm_page_family){
+    if(!vm_page_family || vm_page_family->free_block_heap.size == 0 || !vm_page_family->free_block_heap.root)
+        return NULL;
+    glheap_node_t* root = vm_page_family->free_block_heap.root;
+    return (block_meta_data_t*)((char*)root- vm_page_family->free_block_heap.offset);
+}
+
+#define IS_FREE_BLOCK_HEAP_EMPTY(family)(family->free_block_heap.size==0)
 
 #endif

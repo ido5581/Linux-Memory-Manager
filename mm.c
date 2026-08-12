@@ -47,7 +47,10 @@ void mm_instantiate_new_page_family(char* struct_name, uint32_t struct_size){
         first_vm_page_for_families = (vm_page_for_families_t*)mm_get_new_vm_page_from_kernal(1);
         first_vm_page_for_families->next = NULL;
         strncpy(first_vm_page_for_families->vm_page_family[0].struct_name,struct_name, MM_MAX_STRUCT_NAME);
-        first_vm_page_for_families->vm_page_family[0].struct_size += struct_size;
+        first_vm_page_for_families->vm_page_family[0].struct_size = struct_size;
+        first_vm_page_for_families->vm_page_family[0].free_block_heap.size = 0;
+        first_vm_page_for_families->vm_page_family[0].free_block_heap.root = NULL;
+        first_vm_page_for_families->vm_page_family[0].free_block_heap.offset = offsetof(block_meta_data_t,node);
         return;
     }
 
@@ -69,6 +72,9 @@ void mm_instantiate_new_page_family(char* struct_name, uint32_t struct_size){
         MM_MAX_STRUCT_NAME);
         vm_page_family_curr->struct_size = struct_size;
         vm_page_family_curr->first_page = NULL;
+        vm_page_family_curr->free_block_heap.root = NULL;
+        vm_page_family_curr->free_block_heap.size = 0;
+        vm_page_family_curr->free_block_heap.offset = offsetof(block_meta_data_t,node);
 }
 
 void mm_print_registered_page_families(){
@@ -116,6 +122,8 @@ static inline uint32_t mm_max_page_allocateable_memory(int units){
 vm_page_t* allocate_vm_page(vm_page_family_t* vm_page_family){
     vm_page_t* vm_page = mm_get_new_vm_page_from_kernal(1);
     MARK_VM_PAGE_EMPTY(vm_page);
+    glheap_node_init((&vm_page->block_meta_data.node));
+    glnode_insert(&vm_page_family->free_block_heap, &vm_page->block_meta_data.node);
     vm_page->block_meta_data.block_size = mm_max_page_allocateable_memory(1);
     vm_page->block_meta_data.offset = offsetof(vm_page_t, block_meta_data);
     vm_page->next = NULL;
@@ -155,9 +163,17 @@ void mm_vm_page_delete_and_free(vm_page_t* vm_page){
     mm_retrun_vm_to_kernal((void*)vm_page,1);
 }
 
-int main(){
-    return 0;
+void mm_add_free_block_to_heap(vm_page_family_t *family, block_meta_data_t* free_block){
+    assert(free_block->is_free == MM_TRUE);
+
+    glnode_insert(&family->free_block_heap, &free_block->node);
 }
+
+void mm_remove_free_block_from_heap(vm_page_family_t *family, block_meta_data_t *free_block) {
+    glnode_remove(&family->free_block_heap, &free_block->node);
+}
+
+
 
 
 
