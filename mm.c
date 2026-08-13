@@ -174,6 +174,68 @@ void mm_remove_free_block_from_heap(vm_page_family_t *family, block_meta_data_t 
 }
 
 
+void* xcalloc(char* struct_name, int units){
+    vm_page_family_t* pg_family = lookup_page_family_by_name(pg_family->struct_name);
+    if(!pg_family){
+        printf("page family name not found\n");
+        return NULL;
+    }
+
+    if(units * pg_family->struct_size > mm_max_page_allocateable_memory(1)){
+        printf("size is too big\n");
+        return NULL;
+    }
+
+    block_meta_data_t* free_block_meta_data = NULL;
+    free_block_meta_data = mm_allocate_free_data_block(pg_family, units* pg_family->struct_size);
+    if(free_block_meta_data){
+        memset((char*)(free_block_meta_data+1),0, free_block_meta_data->block_size);
+        return (void*)(free_block_meta_data+1);
+    }
+    return NULL;
+}
+
+static block_meta_data_t* mm_allocate_free_data_block(
+    vm_page_family_t* vm_page_family, uint32_t req_size){
+        block_meta_data_t* biggest_block = mm_get_biggest_block_page_family(vm_page_family);
+        if(!biggest_block || biggest_block->block_size < req_size)
+            allocate_vm_page(vm_page_family);
+        glheap_node_t* biggest_node = gl_heap_extract_max(&vm_page_family->free_block_heap);
+        block_meta_data_t* block_to_split = (block_meta_data_t*)((char*)biggest_block - vm_page_family->free_block_heap.offset);
+        return mm_split_free_data_block(vm_page_family, block_to_split, req_size);
+
+        return NULL;
+}
+
+static vm_bool_t mm_split_free_data_block_for_allocation(vm_page_family_t *vm_page_family,
+    block_meta_data_t* block_meta_data, uint32_t size){
+        uint32_t remaining_size = block_meta_data->block_size - size;
+        if(remaining_size < sizeof(block_meta_data_t)){ // Hard internal fragmentation
+            block_meta_data->is_free = MM_FALSE;            
+        }
+        else //if(remaining_size <= sizeof(block_meta_data_t) + vm_page_family->struct_size
+            //&& remaining_size >= sizeof(block_meta_data_t)){// Soft internal fragmentation
+                {block_meta_data_t* new_meta_block = 
+                (block_meta_data_t*)((char*)block_meta_data + sizeof(block_meta_data_t)+size);
+                new_meta_block->is_free = MM_TRUE;
+                new_meta_block->block_size = (remaining_size - sizeof(block_meta_data_t));
+                new_meta_block->offset = block_meta_data->offset+ sizeof(block_meta_data_t) + size;
+                glheap_node_init((&new_meta_block->node));
+                
+
+                //updating the old block
+                
+                mm_bind_blocks_for_allocation (block_meta_data, new_meta_block);
+                block_meta_data->is_free = MM_FALSE;
+                block_meta_data->block_size = size;
+                glnode_insert(&vm_page_family->free_block_heap, &new_meta_block->node);
+        }
+        return MM_TRUE;
+
+    }
+
+
+
 
 
 

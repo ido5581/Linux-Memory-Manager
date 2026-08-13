@@ -53,7 +53,7 @@ static void swap_nodes(glheap_t* heap, glheap_node_t* child, glheap_node_t* pare
 }
 
 static void shift_up(glheap_t* heap, glheap_node_t* glnode){
-    while(glnode->parent != NULL && compare_nodes(heap, glnode, glnode->parent)){
+    while(glnode->parent != NULL && compare_nodes(heap, glnode, glnode->parent)>0){
         swap_nodes(heap, glnode, glnode->parent);    
     }
     return;

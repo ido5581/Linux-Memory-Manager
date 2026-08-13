@@ -10,13 +10,6 @@ typedef enum{
     MM_TRUE,
 }vm_bool_t;
 
-
-typedef struct vm_page_for_families_{
-    struct vm_page_for_families_ *next;
-    vm_page_family_t vm_page_family[0];
-}vm_page_for_families_t;
-
-
 typedef struct block_meta_data_{
     vm_bool_t is_free;
     uint32_t block_size;
@@ -29,9 +22,14 @@ typedef struct block_meta_data_{
 typedef struct vm_page_family_{
     char struct_name [MM_MAX_STRUCT_NAME];
     uint32_t struct_size;
-    struct vm_page_t* first_page;
+    struct vm_page_* first_page;
     glheap_t free_block_heap;
 } vm_page_family_t;
+
+typedef struct vm_page_for_families_{
+    struct vm_page_for_families_ *next;
+    vm_page_family_t vm_page_family[0];
+}vm_page_for_families_t;
 
 typedef struct vm_page_{
     struct vm_page_* next;
@@ -100,7 +98,7 @@ vm_page_t_ptr->block_meta_data.is_free = MM_TRUE
 
 #define ITERATE_VM_PAGE_ALL_BLOCKS_BEGIN(vm_page_ptr, curr)\
 {\
-    for(curr =(vm_page_ptr)->block_meta_data; curr != NULL; curr = curr->next_block){        
+    for(curr =&(vm_page_ptr)->block_meta_data; curr != NULL; curr = curr->next_block){        
         
 #define ITERATE_VM_PAGE_ALL_BLOCKS_END(vm_page_ptr, curr)\
     }\
