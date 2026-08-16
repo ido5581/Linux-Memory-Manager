@@ -19,6 +19,6 @@ The memory manager is built on a custom metadata structure (`block_meta_data_t`)
 
 ### Memory Layout
 ```text
-[ Page Header (vm_page_t) ] [ Meta Data | User Data ] [ Meta Data | User Data ] ...
+[ Page Header (vm_page_t) ] [ Meta Data | User Data ] [ Meta Data | User Data ] ...```
 
 ##Getting Started
