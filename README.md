@@ -21,17 +21,4 @@ The memory manager is built on a custom metadata structure (`block_meta_data_t`)
 ```text
 [ Page Header (vm_page_t) ] [ Meta Data | User Data ] [ Meta Data | User Data ] ...
 
-## Getting Started
-
-### Prerequisites
-Make sure you have the following installed in your development environment:
-* **GCC Compiler**
-* **Linux Environment** (Native Linux or WSL on Windows)
-
-### Build Instructions
-To compile the library along with your test file, run the following command in your terminal:
-
-```bash
-gcc -Wall -g mm.c glthread.c main.c -o mem_manager
-
-./mem_manager
+##Getting Started
