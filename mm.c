@@ -5,8 +5,8 @@
 #include <assert.h>
 #include "mm.h"
 
-
 //function declarations
+void xfree(void*);
 static vm_bool_t mm_split_free_data_block(vm_page_family_t *vm_page_family,
     block_meta_data_t* block_meta_data, uint32_t size);
 
@@ -212,7 +212,70 @@ void* xcalloc(char* struct_name, int units){
     return NULL;
 }
 
+void* xrealloc(void* ptr, size_t new_size){
+    if(ptr == NULL)
+        return NULL;
+    
+    if(new_size == 0){
+        xfree(ptr);
+        return NULL;
+    }
+    block_meta_data_t* my_block = ((block_meta_data_t*)(ptr))-1;
+    if(my_block->block_size == new_size){
+        printf("there is no need for reallocation. \n");
+        return ptr;
+    }
+    else if(new_size < my_block->block_size){// we're gonna have to split some blocks
+        size_t remaining_size = my_block->block_size - new_size; 
+        if(remaining_size < sizeof(block_meta_data_t)){
+            printf("cannot split\n");
+            return ptr;
+        }
+        else{
+            block_meta_data_t* remaining_block = (block_meta_data_t*)((char*)ptr + new_size);
+            my_block->block_size = new_size;
 
+            remaining_block->block_size = remaining_size - sizeof(block_meta_data_t);
+            remaining_block->is_free = MM_FALSE;
+            remaining_block->offset = my_block->offset + new_size + sizeof(block_meta_data_t);
+            remaining_block->next_block = my_block->next_block;
+            remaining_block->prev_block = my_block;
+            my_block->next_block = remaining_block;
+            if(remaining_block->next_block){
+                remaining_block->next_block->prev_block = remaining_block;
+            }
+            xfree((void*)(remaining_block+1));
+            return ptr;
+        }
+    }
+    else{// new_size > block->size
+        block_meta_data_t* next_curr_block =  my_block->next_block;
+        if(next_curr_block && next_curr_block->is_free == MM_TRUE && // here we'll combine adjacent blocks
+        new_size <= my_block->block_size + sizeof(block_meta_data_t) + next_curr_block->block_size){
+            vm_page_t* vm_page = MM_GET_PAGE_FROM_META_BLOCK(next_curr_block);
+            mm_remove_free_block_from_heap(vm_page->page_family, next_curr_block);
+            my_block->block_size += sizeof(block_meta_data_t) + next_curr_block->block_size;  
+            my_block->next_block = next_curr_block->next_block;
+            
+            if(my_block->next_block) {
+                my_block->next_block->prev_block = my_block;
+            }
+            return ptr;
+        }
+        else{// here we'll allocate a whole new block
+            vm_page_t* vm_page = MM_GET_PAGE_FROM_META_BLOCK(my_block);
+            int units = new_size/vm_page->page_family->struct_size;
+            void* new_ptr = xcalloc(vm_page->page_family->struct_name, units);
+            if(!new_ptr) {
+                printf("Relocation failed: Not enough memory.\n");
+                return NULL;
+            }
+            memcpy(new_ptr, ptr, my_block->block_size);
+            xfree(ptr);
+            return new_ptr;
+        }
+    }
+}
 
 static vm_bool_t mm_split_free_data_block(vm_page_family_t *vm_page_family,
     block_meta_data_t* block_meta_data, uint32_t size){
@@ -241,7 +304,7 @@ static vm_bool_t mm_split_free_data_block(vm_page_family_t *vm_page_family,
     }
 
 void xfree(void* data){
-    block_meta_data_t* my_block = (block_meta_data_t*)(data)-1;
+    block_meta_data_t* my_block = ((block_meta_data_t*)(data))-1;
     my_block->is_free = MM_TRUE;
     if(my_block->next_block){
         if(my_block->next_block->is_free == MM_TRUE){
@@ -304,6 +367,3 @@ void mm_print_memory_usage(char* struct_name){
         curr_page = curr_page->next;
     }
 }
-
-    
-
